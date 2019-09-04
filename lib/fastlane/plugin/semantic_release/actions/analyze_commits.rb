@@ -74,6 +74,7 @@ module Fastlane
 
         UI.message("Found #{splitted.length} commits since last release")
         releases = params[:releases]
+        release_type = nil
 
         splitted.each do |line|
           # conventional commits are in format
@@ -85,19 +86,30 @@ module Fastlane
           )
 
           if commit[:release] == "major" || commit[:is_breaking_change]
-            next_major += 1
-            next_minor = 0
-            next_patch = 0
-          elsif commit[:release] == "minor"
-            next_minor += 1
-            next_patch = 0
-          elsif commit[:release] == "patch"
-            next_patch += 1
+            release_type = "major"
+            break
           end
 
-          next_version = "#{next_major}.#{next_minor}.#{next_patch}"
-          UI.message("#{next_version}: #{line}")
+          if commit[:release] == "minor"
+            release_type = "minor"
+          elsif commit[:release] == "patch" && release_type != "minor"
+            release_type = "patch"
+          end
         end
+
+        if release_type == "major"
+          next_major += 1
+          next_minor = 0
+          next_patch = 0
+        elsif release_type == "minor"
+          next_minor += 1
+          next_patch = 0
+        elsif release_type == "patch"
+          next_patch += 1
+        end
+
+        next_version = "#{next_major}.#{next_minor}.#{next_patch}"
+        UI.message("#{next_version}")
 
         next_version = "#{next_major}.#{next_minor}.#{next_patch}"
 
