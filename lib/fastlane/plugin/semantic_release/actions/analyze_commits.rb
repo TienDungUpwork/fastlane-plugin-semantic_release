@@ -74,6 +74,7 @@ module Fastlane
 
         UI.message("Found #{splitted.length} commits since last release")
         releases = params[:releases]
+        release_type = nil
 
         splitted.each do |line|
           # conventional commits are in format
@@ -84,20 +85,31 @@ module Fastlane
             releases: releases
           )
 
-          if commit[:release] == "major" || commit[:is_breaking_change]
-            next_major += 1
-            next_minor = 0
-            next_patch = 0
-          elsif commit[:release] == "minor"
-            next_minor += 1
-            next_patch = 0
-          elsif commit[:release] == "patch"
-            next_patch += 1
+          break if commit[:release] == "major" || commit[:is_breaking_change]
+            release_type = "major"
           end
 
-          next_version = "#{next_major}.#{next_minor}.#{next_patch}"
-          UI.message("#{next_version}: #{line}")
+          if commit[:release] == "minor"
+            release_type = "minor"
+          elsif commit[:release] == "patch" && release_type != "minor"
+            release_type = "patch"
+          end
         end
+
+        if release_type == "major"
+          next_major += 1
+          next_minor = 0
+          next_patch = 0
+        elsif release_type == "minor"
+          next_minor += 1
+          next_patch = 0
+        elsif release_type == "patch"
+          next_patch += 1
+        end
+        UI.message("#{release_type} this is my changes!!")
+
+        next_version = "#{next_major}.#{next_minor}.#{next_patch}"
+        UI.message("#{next_version}: #{line}")
 
         next_version = "#{next_major}.#{next_minor}.#{next_patch}"
 
@@ -114,7 +126,7 @@ module Fastlane
         Actions.lane_context[SharedValues::RELEASE_NEXT_PATCH_VERSION] = next_patch
         Actions.lane_context[SharedValues::RELEASE_NEXT_VERSION] = next_version
 
-        success_message = "Next version (#{next_version}) is higher than last version (#{version}). This version should be released."
+        success_message = "!!Next version (#{next_version}) is higher than last version (#{version}). This version should be released."
         UI.success(success_message) if is_releasable
 
         is_releasable
